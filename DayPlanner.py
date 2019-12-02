@@ -18,6 +18,40 @@ with open('date.txt','r') as f:
     cont = eval(f.read().strip().split("\n")[1])
     d = f.read().strip().split("\n")[0]
 
+class Encryption:
+    def __init__(self,data):
+        self.data = data
+        
+    def encrypt(self,letters):
+        data = list(self.data)
+        encrypted = ''
+        for i in range(len(data)):
+            if data[i].isalpha():
+                if data[i].isupper():
+                    data[i] = letters[25-letters.index(data[i])].lower()
+                else:
+                    data[i] = letters[25-letters.index(data[i].upper())]
+            elif data[i].isdigit:
+                (data[i]) = 9 - int(data[i])
+        for i in data:
+            encrypted += str(i)
+        return(encrypted)
+        
+    def decrypt(self,letters):
+        data = list(self.data)
+        decrypted = ''
+        for i in range(len(data)):
+            if data[i].isalpha():
+                if data[i].isupper():
+                    data[i] = letters[25-letters.index(data[i])].lower()
+                else:
+                    data[i] = letters[25-letters.index(data[i].upper())]
+            elif data[i].isdigit:
+                 (data[i]) = 9 - int(data[i])
+        for i in data:
+            decrypted += str(i)
+        return(decrypted)
+
 def date_conversion(date):
     date = date.split("-")
     month = {1:"January",2:"February",3:"March",4:"April",5:"May",6:"June",7:"July",8:"August",9:"September",10:"October",11:"November",12:"December"}
@@ -86,18 +120,23 @@ def graph_display(pk):
         matched_dates = []
         for task in tasks:
             if task["date"] in dates:
-                matched_dates.append(task["date"])
-        req_counts = [0,0,0,0,0,0]
-        for i in matched_dates:
-            req_counts[dates.index(i)] += 1
+                matched_dates.append([task["date"],task["status"]])
+        req_counts, req_confirmed_counts = [0,0,0,0,0,0],[0,0,0,0,0,0]
+        for k in matched_dates:
+            if k[1]=="Yes":
+                req_confirmed_counts[dates.index(k[0])]+=1
+
+            req_counts[dates.index(k[0])] += 1
             
         #req_counts--> Today, Yesterday,...
 
-        plt.plot(x,req_counts,'bo',ls="solid",markersize=5,markeredgecolor="red")
+        plt.plot(x,req_counts,'bo',ls="solid",markersize=5,markeredgecolor="red",label="Total Tasks")
+        plt.plot(x,req_confirmed_counts,'yo',ls='solid',markersize=5,markeredgecolor="green",label="Completed Tasks")
         plt.xticks(x,dates)
         plt.xlabel("Last Six Days")
         plt.ylabel("No. of Tasks")
         plt.title("Productivity Statistics")
+        plt.legend(loc="upper right")
         plt.show()
         
     Button(wnd,text="SUBMIT",bg="#D98880",fg="white",font=('Calistoga',20,"bold"),command=lambda var=pk: graphing(var)).pack()
@@ -120,7 +159,7 @@ def old_homepage(pk,date=d,tasks=cont[:2]):
     current_date_viewed = Label(title_frame,text="Viewing: "+date_conversion(date),font=('Calistoga',20,"bold"),bg="#FFE5B4",fg="black")
     current_date_viewed.grid(row=1,column=0)
 
-    title = Label(title_frame,text=" Day-to-Day Planner",font=('Calistoga',40,"bold underline"),bg="#FFE5B4",fg="black")
+    title = Label(title_frame,text=" DayPlanner",font=('Calistoga',40,"bold underline"),bg="#FFE5B4",fg="black")
     title.grid(row=1,column=1)
 
     def destroy():
@@ -296,6 +335,7 @@ def add_task(pk):
             data[pk]["data"].append(
                 {
                     "task_name":name,
+                    "id": str(int(data[pk]["data"][-1]["id"])+1),
                     "task":info,
                     "date":date,
                     "time":time,
@@ -305,12 +345,14 @@ def add_task(pk):
 
             with open("data.txt","r+") as f:
                 cont = f.read()
-                base = eval(cont.split(r"%%//%%")[0])
+                base = eval(cont.split(r"%%//%%")[pk])
                 base["data"] = data[pk]["data"]
                 l = cont.split(r"%%//%%")
-                l[0] = str(base)
-                l[1] = str(eval(l[1]))
-
+                l[pk] = str(base)
+                for i in range(len(l)-1):
+                    if i!=pk:
+                        l[i]=str(eval(l[i]))
+        
             with open('data.txt','w') as f:
                 pass
 
@@ -390,11 +432,11 @@ def homepage(pk):
     today = Button(wnd,text="Today",font=('Calistoga',20,"bold"),bg="#FF2A00",fg="white",command=today_view,width=15)
     today.grid(row=1,column=0)
 
-    title = Label(title_frame,text=" Day-to-Day Planner",font=('Calistoga',40,"bold underline"),bg="#FFE5B4",fg="black")
+    title = Label(title_frame,text=" DayPlanner",font=('Calistoga',40,"bold underline"),bg="#FFE5B4",fg="black")
     title.grid(row=1,column=1)
 
     close_img = PhotoImage(master=wnd,file="close.png")
-    close = Button(wnd,command=lambda cur=wnd: login(cur))
+    close = Button(wnd,command=lambda cur=wnd: login(cur),relief="groove")
     close.config(image=close_img)
     close.grid(row=1,column=2)
 
@@ -474,7 +516,7 @@ def homepage(pk):
                     if int(t["id"])==int(val):
                         cur = data[pk]["data"][data[pk]["data"].index(t)]
                         break
-                
+
                 rem = data[pk]["data"][:data[pk]["data"].index(t)]
                 if cur["status"]=="Yes":
                     messagebox.showinfo("Task Incomplete.","Page will be updated upon app restart.")
@@ -518,30 +560,76 @@ def homepage(pk):
 
     buttons_frame = Frame(wnd,bg="#FFE5B4")
     
+    def help_func():
+        wnd = Tk()
+        wnd.config(bg="#FFE5B4")
+        wnd.geometry("400x400+200+200")
+        wnd.iconbitmap('logo.ico')
+        wnd.title("Help")
+        
+        def passme():
+            pass
+        add_tsk =  PhotoImage(master=wnd,file="planner.png")
+        add_tsk_btn = Button(wnd,bg="#FFE5B4",relief="groove",command=passme)
+        add_tsk_btn.config(image=add_tsk)
+        add_tsk_btn.grid(row=0,column=0,padx=30,pady=15)
+        add_tsk_label = Label(wnd,text="Allows user to add a task.",bg="#FFE5B4",fg="black",font=('Helevitica',13,"bold"))
+        add_tsk_label.grid(row=0,column=1)
+
+        change_date_img = PhotoImage(master=wnd,file='calendar.png')
+        change_date = Button(wnd,command=passme,relief="groove")
+        change_date.config(image=change_date_img)
+        change_date.grid(row=1,column=0,pady=15)
+        change_date_label = Label(wnd,text="Allows user to search for tasks\non a particular date.",bg="#FFE5B4",fg="black",font=('Helevitica',13,"bold"))
+        change_date_label.grid(row=1,column=1)
+
+        graph= PhotoImage(master=wnd,file="productivity.png")
+        graph_button=Button(wnd,command=passme,relief="groove")
+        graph_button.config(image=graph)
+        graph_button.grid(row=2,column=0,pady=15)
+        graph_button_label = Label(wnd,text="Allows user to find analytics\nregarding their productivtiy over\na certain time frame.",bg="#FFE5B4",fg="black",font=('Helevitica',13,"bold"))
+        graph_button_label.grid(row=2,column=1)
+
+        close_img = PhotoImage(master=wnd,file="close.png")
+        close = Button(wnd,command=passme,relief="groove")
+        close.config(image=close_img)
+        close.grid(row=3,column=0,pady=15)
+        close_label = Label(wnd,text="Allows user to logout.",bg="#FFE5B4",fg="black",font=('Helevitica',13,"bold"))
+        close_label.grid(row=3,column=1)
+
+        wnd.mainloop()
+
+    Label(buttons_frame,text="\n\n",bg="#FFE5B4").grid(row=0,column=0)
+    help_img = PhotoImage(master=wnd,file="help.png")
+    help_btn = Button(buttons_frame,command=help_func,relief="groove")
+    help_btn.config(image=help_img)
+    help_btn.grid(row=1,column=0)
+    Label(buttons_frame,text="\n\n",bg="#FFE5B4").grid(row=2,column=0)
     add_tsk_img = PhotoImage(master=wnd,file="planner.png")
-    add_tsk = Button(buttons_frame,command=lambda pk=pk: add_task(pk))
+    add_tsk = Button(buttons_frame,command=lambda pk=pk: add_task(pk),relief="groove")
     add_tsk.config(image=add_tsk_img)
-    add_tsk.grid(row=0,column=0)
-    Label(buttons_frame,text="\n\n",bg="#FFE5B4").grid(row=1,column=0)
+    add_tsk.grid(row=3,column=0)
+    Label(buttons_frame,text="\n\n",bg="#FFE5B4").grid(row=4,column=0)
     change_date_img = PhotoImage(master=wnd,file='calendar.png')
-    change_date = Button(buttons_frame,command=lambda var=pk: date_selection(var))
+    change_date = Button(buttons_frame,command=lambda var=pk: date_selection(var),relief="groove")
     change_date.config(image=change_date_img)
-    change_date.grid(row=2,column=0)
-    '''graph_ = Image.open("productivity.png")
-    graph = ImageTk.PhotoImage(graph_)'''
+    change_date.grid(row=5,column=0)
+    Label(buttons_frame,text="\n\n",bg="#FFE5B4").grid(row=6,column=2)
     graph= PhotoImage(master=wnd,file="productivity.png")
     graph_button=Button(wnd,command=lambda var=pk: graph_display(var),relief="groove")
     graph_button.config(image=graph)
-    graph_button.grid(row=3,column=0)
+    graph_button.grid(row=7,column=2)
 
     buttons_frame.grid(row=1,column=2,rowspan=10)
     wnd.mainloop()
 
 def login(cur):
-    try:
-        cur.destroy()
-    except:
-        pass
+    if cur!="No Window Yet.":
+        confirm = messagebox.askyesno("Confirmation","Are you sure you want to logout?")
+        if confirm==True:
+            cur.destroy()
+        else:
+            return None
 
     wnd = Tk()
     wnd.geometry("300x350+150+150")
@@ -563,7 +651,8 @@ def login(cur):
 
     def authenticate(event):
         usern = username.get()
-        pswd = password.get()
+        pswd = Encryption(password.get())
+        pswd = pswd.decrypt(['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'])
         data = retrieve_data()
 
         c=0
@@ -585,5 +674,4 @@ def login(cur):
     submit.pack()
     wnd.mainloop()
     
-#login("No Window Yet.")
-homepage(0)
+login("No Window Yet.")
